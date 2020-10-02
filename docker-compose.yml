@@ -1,0 +1,104 @@
+version: '3.8'
+
+networks:
+  frontend:
+    name: frontend
+    external: true
+    driver: bridge
+  backend:
+    name: backend
+    external: false
+
+services:
+  proxyreverso:
+    build:
+      dockerfile: ./proxyreverso/Dockerfile
+      context: .
+    container_name: proxyreverso
+    image: proxyreverso
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /opt/nginx/var/log/nginx:/var/log/nginx
+    depends_on:
+      - php1
+      - php2
+      - php3
+      - whoami
+
+  base:
+    build:
+      dockerfile: ./base/Dockerfile
+      context: .
+    container_name: base
+    image: base
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+  php1:
+    build:
+      dockerfile: ./php/Dockerfile
+      context: .
+    container_name: php1
+    image: php
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - /opt/php1/var/log/apache2:/var/log/apache2
+      - /opt/php1/var/www:/var/www
+  php2:
+    build:
+      dockerfile: ./php/Dockerfile
+      context: .
+    container_name: php2
+    image: php
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - /opt/php2/var/log/apache2:/var/log/apache2
+      - /opt/php2/var/www:/var/www
+  php3:
+    build:
+      dockerfile: ./php/Dockerfile
+      context: .
+    container_name: php3
+    image: php
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - /opt/php3/var/log/apache2:/var/log/apache2
+      - /opt/php3/etc/apache2:/etc/apache2
+      - /opt/php3/var/www:/var/www
+
+  whoami:
+    container_name: whoami
+    image: jwilder/whoami
+    restart: unless-stopped
+    networks:
+      - backend
+
+  mariadb:
+    container_name: mariadb
+    image: mariadb:latest
+    restart: unless-stopped
+    networks:
+      - backend
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: banco
+      MYSQL_USER: usuario
+      MYSQL_PASSWORD: senha
+    volumes:
+      - /opt/mariadb:/var/lib/mysql
+
